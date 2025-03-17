@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visage Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="dark-mode">
+    <div class="container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h1>Visage</h1>
+            </div>
+            <div class="sidebar-menu">
+                <nav>
+                    <ul>
+                        <li class="active"><a href="/"><i class="icon">📊</i> Dashboard</a></li>
+                        <li><a href="/analytics"><i class="icon">📈</i> Analytics</a></li>
+                        <li><a href="#"><i class="icon">👥</i> Employees</a></li>
+                        <li><a href="#"><i class="icon">⚙️</i> Settings</a></li>
+                    </ul>
+                </nav>
+            </div>
+            <div class="sidebar-footer">
+                <p>© 2025 Visage</p>
+            </div>
+            <div class="theme-toggle">
+                <button id="theme-toggle-btn">☀️</button>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Header -->
+            <div class="header">
+                <div class="welcome">
+                    <h1>Welcome back, {{ manager_name }}</h1>
+                    <p>Here's what's happening with your team today</p>
+                </div>
+                <div class="date-time">
+                    <p id="current-date">{{ current_date }}</p>
+                    <h2 id="current-time">{{ current_time }}</h2>
+                </div>
+            </div>
+
+            <!-- Dashboard Content -->
+            <div class="dashboard-grid">
+                <!-- Employee List -->
+                <div class="card employee-list">
+                    <div class="card-header">
+                        <h2>Current Shift Employees</h2>
+                    </div>
+                    <div class="card-content">
+                        <!-- Employee Summary Metrics -->
+                        <div class="employee-summary">
+                            <div class="summary-metrics">
+                                <div class="metric">
+                                    <span class="metric-title">Total</span>
+                                    <span class="metric-value">{{ employee_summary.total }}</span>
+                                </div>
+                                <div class="metric">
+                                    <span class="metric-title">Present</span>
+                                    <span class="metric-value present">{{ employee_summary.present }}</span>
+                                </div>
+                                <div class="metric">
+                                    <span class="metric-title">Absent</span>
+                                    <span class="metric-value absent">{{ employee_summary.absent }}</span>
+                                </div>
+                                <div class="metric">
+                                    <span class="metric-title">Late</span>
+                                    <span class="metric-value late">{{ employee_summary.late }}</span>
+                                </div>
+                                <div class="metric">
+                                    <span class="metric-title">On Leave</span>
+                                    <span class="metric-value on-leave">{{ employee_summary.on_leave }}</span>
+                                </div>
+                                <div class="metric">
+                                    <span class="metric-title">Avg KPI</span>
+                                    <span class="metric-value">{{ employee_summary.avg_kpi }}%</span>
+                                </div>
+                                <div class="metric alerts">
+                                    <span class="metric-title">Alerts</span>
+                                    <span class="metric-value alert">{{ employee_summary.alerts }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Employee Table -->
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Employee Name</th>
+                                    <th>Position</th>
+                                    <th>Status</th>
+                                    <th>Check-in</th>
+                                    <th>KPI</th>
+                                    <th>Hours</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for employee in employees %}
+                                <tr class="status-{{ employee.status }}">
+                                    <td>{{ employee.id }}</td>
+                                    <td>{{ employee.name }}</td>
+                                    <td>{{ employee.position }}</td>
+                                    <td>
+                                        <span class="status-indicator {{ employee.status }}"></span>
+                                        {{ employee.status|capitalize }}
+                                    </td>
+                                    <td>{{ employee.check_in }}</td>
+                                    <td>
+                                        <div class="kpi-bar-container">
+                                            <div class="kpi-bar" style="width: {{ employee.kpi }}%"></div>
+                                            <span class="kpi-text">{{ employee.kpi }}%</span>
+                                        </div>
+                                    </td>
+                                    <td>{{ employee.hours }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Camera Feed -->
+                <div class="card camera-feed">
+                    <div class="card-header">
+                        <h2>Customer Feed</h2>
+                    </div>
+                    <div class="card-content">
+                        <div class="video-container">
+                            <img src="{{ url_for('video_feed') }}" alt="Video Feed">
+                        </div>
+                        <div class="emotion-display">
+                            <span>Detected Emotion:</span>
+                            <div id="emotion-badge" class="emotion-badge">{{ detected_emotion }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Team Performance -->
+                <div class="card team-performance">
+                    <div class="card-header">
+                        <h2>Team Performance</h2>
+                    </div>
+                    <div class="card-content">
+                        <div class="metrics-container">
+                            {% for metric in metrics %}
+                            <div class="metric-box">
+                                <div class="metric-header">
+                                    <span class="metric-icon">{{ metric.icon }}</span>
+                                    <span class="metric-title">{{ metric.title }}</span>
+                                </div>
+                                <div class="metric-value">{{ metric.value }}</div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Emotion Analytics -->
+                <div class="card emotion-analytics">
+                    <div class="card-header">
+                        <h2>Daily Emotion Analytics</h2>
+                    </div>
+                    <div class="card-content">
+                        <h3>Top 5 Customer Emotions Today</h3>
+                        <div class="emotion-chart">
+                            {% for emotion in emotion_stats %}
+                            <div class="emotion-row">
+                                <span class="emotion-name">{{ emotion.emotion }}</span>
+                                <div class="emotion-bar-container">
+                                    <div class="emotion-bar" style="width: {{ emotion.percentage }}%;" data-emotion="{{ emotion.emotion.lower() }}"></div>
+                                </div>
+                                <span class="emotion-percentage">{{ emotion.percentage }}%</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <div class="chart-controls">
+                            <button id="refresh-emotions" class="btn">🔄 Refresh Data</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

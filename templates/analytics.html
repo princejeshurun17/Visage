@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/analytics.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="dark-mode">
+    <div class="dashboard">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>Visage</h1>
+            </div>
+            <div class="manager-profile">
+                <img src="{{ url_for('static', filename='img/avatar.png') }}" alt="Manager Profile">
+                <h3>{{ manager_name }}</h3>
+                <p>Store Manager</p>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="/"><i class="icon">📊</i> Dashboard</a></li>
+                    <li class="active"><a href="/analytics"><i class="icon">📈</i> Analytics</a></li>
+                    <li><a href="#"><i class="icon">👥</i> Employees</a></li>
+                    <li><a href="#"><i class="icon">⚙️</i> Settings</a></li>
+                </ul>
+            </nav>
+            <div class="sidebar-footer">
+                <p>© 2025 Visage</p>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="content">
+            <header>
+                <h1>Analytics Dashboard</h1>
+                <div class="time-display" id="timeDisplay">
+                    <div class="time" id="currentTime">00:00:00</div>
+                    <div class="date" id="currentDate">Loading...</div>
+                </div>
+            </header>
+
+            <!-- Analytics Content -->
+            <div class="analytics-grid">
+                <!-- Performance Trend -->
+                <div class="card full-width">
+                    <div class="card-header">
+                        <h2>Performance Trend</h2>
+                    </div>
+                    <div class="card-content">
+                        <canvas id="performanceChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Emotion Analysis -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Emotion Trends</h2>
+                    </div>
+                    <div class="card-content">
+                        <canvas id="emotionTrendChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Attendance Analytics -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Attendance Analytics</h2>
+                    </div>
+                    <div class="card-content">
+                        <canvas id="attendanceChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Department Performance -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Department Performance</h2>
+                    </div>
+                    <div class="card-content">
+                        <canvas id="departmentChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Employee Summary -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Employee Summary</h2>
+                    </div>
+                    <div class="card-content">
+                        <div class="summary-metrics analytics-summary">
+                            <div class="metric">
+                                <span class="metric-title">Total</span>
+                                <span class="metric-value">{{ employee_summary.total }}</span>
+                            </div>
+                            <div class="metric">
+                                <span class="metric-title">Present</span>
+                                <span class="metric-value present">{{ employee_summary.present }}</span>
+                            </div>
+                            <div class="metric">
+                                <span class="metric-title">Absent</span>
+                                <span class="metric-value absent">{{ employee_summary.absent }}</span>
+                            </div>
+                            <div class="metric">
+                                <span class="metric-title">Late</span>
+                                <span class="metric-value late">{{ employee_summary.late }}</span>
+                            </div>
+                            <div class="metric">
+                                <span class="metric-title">On Leave</span>
+                                <span class="metric-value on-leave">{{ employee_summary.on_leave }}</span>
+                            </div>
+                            <div class="metric">
+                                <span class="metric-title">Avg KPI</span>
+                                <span class="metric-value">{{ employee_summary.avg_kpi }}%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script>
+        // Add this before creating any charts
+        Chart.defaults.color = '#A3A6B4';
+        Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.1)';
+
+        // Performance Chart
+        const performanceData = {{ performance_trend|safe }};
+        const performanceCtx = document.getElementById('performanceChart').getContext('2d');
+        new Chart(performanceCtx, {
+            type: 'line',
+            data: {
+                labels: performanceData.labels,
+                datasets: performanceData.datasets.map((dataset, index) => ({
+                    label: dataset.label,
+                    data: dataset.data,
+                    borderColor: index === 0 ? '#4CAF50' : '#FF9800',
+                    backgroundColor: 'transparent',
+                    borderWidth: 3,
+                    tension: 0.3
+                }))
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: '#A3A6B4'
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        min: 50,
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: '#A3A6B4'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: '#A3A6B4'
+                        }
+                    }
+                }
+            }
+        });
+
+        // Emotion Trend Chart
+        const emotionData = {{ emotion_trend|safe }};
+        const emotionCtx = document.getElementById('emotionTrendChart').getContext('2d');
+        new Chart(emotionCtx, {
+            type: 'line',
+            data: {
+                labels: emotionData.labels,
+                datasets: emotionData.datasets.map((dataset, index) => ({
+                    label: dataset.label,
+                    data: dataset.data,
+                    borderColor: getEmotionColor(dataset.label),
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    tension: 0.2
+                }))
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: '#A3A6B4'
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        stacked: false,
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: '#A3A6B4'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: '#A3A6B4'
+                        }
+                    }
+                }
+            }
+        });
+
+        // Attendance Chart
+        const attendanceData = {{ attendance_data|safe }};
+        const attendanceCtx = document.getElementById('attendanceChart').getContext('2d');
+        new Chart(attendanceCtx, {
+            type: 'bar',
+            data: {
+                labels: attendanceData.labels,
+                datasets: [
+                    {
+                        label: 'Present',
+                        data: attendanceData.present,
+                        backgroundColor: '#4CAF50',
+                        borderColor: 'transparent',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Absent',
+                        data: attendanceData.absent,
+                        backgroundColor: '#F44336',
+                        borderColor: 'transparent',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Late',
+                        data: attendanceData.late,
+                        backgroundColor: '#FF9800',
+                        borderColor: 'transparent',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: '#A3A6B4'
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        stacked: true,
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: '#A3A6B4'
+                        }
+                    },
+                    x: {
+                        stacked: true,
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: '#A3A6B4'
+                        }
+                    }
+                }
+            }
+        });
+
+        // Department Performance Chart
+        const departmentData = {{ department_performance|safe }};
+        const departmentCtx = document.getElementById('departmentChart').getContext('2d');
+        new Chart(departmentCtx, {
+            type: 'polarArea',
+            data: {
+                labels: departmentData.departments,
+                datasets: [{
+                    data: departmentData.values,
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.7)',
+                        'rgba(54, 162, 235, 0.7)',
+                        'rgba(255, 206, 86, 0.7)',
+                        'rgba(75, 192, 192, 0.7)'
+                    ],
+                    borderColor: 'rgba(255, 255, 255, 0.2)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: '#A3A6B4'
+                        }
+                    }
+                }
+            }
+        });
+
+        // Helper function for emotion colors
+        function getEmotionColor(emotion) {
+            const colors = {
+                'Happy': '#4CAF50',
+                'Neutral': '#2196F3',
+                'Sad': '#9C27B0',
+                'Angry': '#F44336',
+                'Surprised': '#FF9800'
+            };
+            return colors[emotion] || '#607D8B';
+        }
+
+        // Update time display
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('currentTime').textContent = now.toLocaleTimeString();
+            document.getElementById('currentDate').textContent = now.toLocaleDateString('en-US', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+        }
+        
+        // Update time every second
+        setInterval(updateTime, 1000);
+        updateTime(); // Initial update
+    </script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
