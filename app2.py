@@ -16,12 +16,13 @@ app = Flask(__name__)
 frame_lock = threading.Lock()
 current_frame = None
 detected_emotion = "Detecting..."
+#add random emotions later
 emotion_stats = [
-    {"emotion": "Happy", "percentage": 45},
-    {"emotion": "Neutral", "percentage": 25},
-    {"emotion": "Surprised", "percentage": 15},
-    {"emotion": "Sad", "percentage": 10},
-    {"emotion": "Angry", "percentage": 5}
+    {"emotion": "Happy", "percentage": 65},
+    {"emotion": "Neutral", "percentage": 20},
+    {"emotion": "Surprised", "percentage": 10},
+    {"emotion": "Sad", "percentage": 2.5},
+    {"emotion": "Angry", "percentage": 2.5}
 ]
 
 # Sample data
