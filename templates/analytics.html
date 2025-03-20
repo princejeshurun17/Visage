@@ -11,7 +11,7 @@
 <body class="dark-mode">
     <div class="dashboard">
         <!-- Sidebar -->
-        <aside class="sidebar">
+        <div class="sidebar">
             <div class="sidebar-header">
                 <h1>Visage</h1>
             </div>
@@ -24,23 +24,26 @@
                 <ul>
                     <li><a href="/"><i class="icon">📊</i> Dashboard</a></li>
                     <li class="active"><a href="/analytics"><i class="icon">📈</i> Analytics</a></li>
-                    <li><a href="#"><i class="icon">👥</i> Employees</a></li>
+                    <li><a href="/employees"><i class="icon">👥</i> Employees</a></li>
                     <li><a href="#"><i class="icon">⚙️</i> Settings</a></li>
                 </ul>
             </nav>
             <div class="sidebar-footer">
                 <p>© 2025 Visage</p>
+                <p><a href="{{ url_for('logout') }}" style="color: var(--dark-text-secondary); text-decoration: none;">Logout</a></p>
             </div>
-        </aside>
+        </div>
 
         <!-- Main Content -->
         <main class="content">
-            <header>
-                <h1>Analytics Dashboard</h1>
-                <div class="time-display" id="timeDisplay">
-                    <div class="time" id="currentTime">00:00:00</div>
-                    <div class="date" id="currentDate">Loading...</div>
-                </div>
+            <header class = "header">
+                    <div class="welcome">
+                        <h2>Analytics Dashboard</h2>
+                    </div>
+                    <div class="time-display" id="timeDisplay">
+                        <div class="date" id="currentDate">Loading...</div>
+                        <div class="time" id="currentTime">00:00:00</div>
+                    </div>
             </header>
 
             <!-- Analytics Content -->
@@ -56,7 +59,7 @@
                 </div>
 
                 <!-- Emotion Analysis -->
-                <div class="card">
+                <div class="card half-width">
                     <div class="card-header">
                         <h2>Emotion Trends</h2>
                     </div>
@@ -66,7 +69,7 @@
                 </div>
 
                 <!-- Attendance Analytics -->
-                <div class="card">
+                <div class="card half-width">
                     <div class="card-header">
                         <h2>Attendance Analytics</h2>
                     </div>
@@ -76,7 +79,7 @@
                 </div>
 
                 <!-- Department Performance -->
-                <div class="card">
+                <div class="card half-width">
                     <div class="card-header">
                         <h2>Department Performance</h2>
                     </div>
@@ -86,7 +89,7 @@
                 </div>
 
                 <!-- Employee Summary -->
-                <div class="card">
+                <div class="card half-width">
                     <div class="card-header">
                         <h2>Employee Summary</h2>
                     </div>

@@ -1,5 +1,4 @@
-
-    document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function() {
     // Theme toggle
     const themeToggleBtn = document.getElementById('theme-toggle-btn');
     themeToggleBtn.addEventListener('click', function() {
@@ -26,7 +25,6 @@
     
     setInterval(updateTime, 1000);
     
-    // Update emotion
     function updateEmotion() {
         fetch('/get_emotion')
             .then(response => response.json())
@@ -35,24 +33,24 @@
                 emotionBadge.textContent = data.emotion;
                 
                 // Update badge color based on emotion
-                emotionBadge.className = 'badge';
-                
-                // Add appropriate class based on emotion
                 switch(data.emotion.toLowerCase()) {
                     case 'happy':
-                        emotionBadge.classList.add('badge-success');
+                        emotionBadge.style.backgroundColor = 'var(--dark-success)';
                         break;
                     case 'sad':
-                        emotionBadge.classList.add('badge-info');
+                        emotionBadge.style.backgroundColor = 'var(--dark-text-secondary)';
                         break;
                     case 'angry':
-                        emotionBadge.classList.add('badge-danger');
+                        emotionBadge.style.backgroundColor = 'var(--dark-danger)';
                         break;
                     case 'neutral':
-                        emotionBadge.classList.add('badge-secondary');
+                        emotionBadge.style.backgroundColor = 'var(--dark-accent)';
+                        break;
+                    case 'surprised':
+                        emotionBadge.style.backgroundColor = 'var(--dark-warning)';
                         break;
                     default:
-                        emotionBadge.classList.add('badge-primary');
+                        emotionBadge.style.backgroundColor = '#2196F3'; // Default blue
                 }
             })
             .catch(error => {
@@ -60,8 +58,8 @@
             });
     }
     
-    // Update emotion every 5 seconds
-    setInterval(updateEmotion, 2000);
+    // Update emotion every 3 seconds
+    setInterval(updateEmotion, 3000);
     updateEmotion(); // Initial update
     
     // Form submission
@@ -128,5 +126,54 @@
         loadMessages();
         // Refresh messages every 3 seconds
         setInterval(loadMessages, 3000);
+    }
+
+    // Add event listener for the refresh emotions button
+    const refreshButton = document.getElementById('refresh-emotions');
+    if (refreshButton) {
+        refreshButton.addEventListener('click', function() {
+            refreshButton.disabled = true;
+            refreshButton.textContent = '🔄 Refreshing...';
+            
+            fetch('/refresh_emotions')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.emotion_stats) {
+                        updateEmotionChart(data.emotion_stats);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error refreshing emotions:', error);
+                })
+                .finally(() => {
+                    setTimeout(() => {
+                        refreshButton.disabled = false;
+                        refreshButton.textContent = '🔄 Refresh Data';
+                    }, 500);
+                });
+        });
+    }
+    
+    // Function to update the emotion chart
+    function updateEmotionChart(stats) {
+        const container = document.querySelector('.emotion-chart');
+        if (!container) return;
+        
+        // Clear existing content
+        container.innerHTML = '';
+        
+        // Add new emotion rows
+        stats.forEach(emotion => {
+            const row = document.createElement('div');
+            row.className = 'emotion-row';
+            row.innerHTML = `
+                <span class="emotion-name">${emotion.emotion}</span>
+                <div class="emotion-bar-container">
+                    <div class="emotion-bar" style="width: ${emotion.percentage}%;" data-emotion="${emotion.emotion.toLowerCase()}"></div>
+                </div>
+                <span class="emotion-percentage">${emotion.percentage}%</span>
+            `;
+            container.appendChild(row);
+        });
     }
 });

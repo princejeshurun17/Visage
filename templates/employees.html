@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Management - Visage</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/notification.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/employee.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Force proper layout for employee page */
+        .dashboard {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            min-height: 100vh;
+        }
+        .MainContent {
+            margin-left: 0px;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .employee-management-section {
+            padding: 0;
+            width: 100%;
+        }
+    </style>
+</head>
+<body class="dark-mode">
+    <div class="dashboard">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h1>Visage</h1>
+            </div>
+            <div class="manager-profile">
+                <img src="{{ url_for('static', filename='img/avatar.png') }}" alt="Manager Profile">
+                <h3>{{ manager_name }}</h3>
+                <p>Store Manager</p>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="/"><i class="icon">📊</i> Dashboard</a></li>
+                    <li><a href="/analytics"><i class="icon">📈</i> Analytics</a></li>
+                    <li class="active"><a href="/employees"><i class="icon">👥</i> Employees</a></li>
+                    <li><a href="#"><i class="icon">⚙️</i> Settings</a></li>
+                </ul>
+            </nav>
+            <div class="sidebar-footer">
+                <p>© 2025 Visage</p>
+                <p><a href="{{ url_for('logout') }}" style="color: var(--dark-text-secondary); text-decoration: none;">Logout</a></p>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <main class="MainContent">
+            <header class="header">
+                <div class="welcome">
+                    <h1>Employee Management</h1>
+                </div>
+                <div class="date-time">
+                    <p id="current-date">{{ current_date }}</p>
+                    <h2 id="current-time">{{ current_time }}</h2>
+                </div>
+            </header>
+
+            <div class="employee-management-section">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Manage Employee Status</h3>
+                        <div class="actions">
+                            <button id="select-all" class="btn">Select All</button>
+                            <button id="deselect-all" class="btn">Deselect All</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Add search and filter controls -->
+                    <div class="employee-filters">
+                        <div class="search-container">
+                            <input type="text" id="employee-search" placeholder="Search employees...">
+                        </div>
+                        <select id="status-filter" class="filter-dropdown">
+                            <option value="all">All Statuses</option>
+                            <option value="present">Present</option>
+                            <option value="absent">Absent</option>
+                            <option value="late">Late</option>
+                            <option value="on leave">On Leave</option>
+                        </select>
+                        <select id="performance-filter" class="filter-dropdown">
+                            <option value="all">All Performance</option>
+                            <option value="high">High</option>
+                            <option value="medium">Medium</option>
+                            <option value="low">Low</option>
+                        </select>
+                    </div>
+                    
+                    <div class="bulk-actions">
+                        <span>With selected (<span id="selected-count">0</span>): </span>
+                        <button class="btn status-btn" data-status="present">Mark Present</button>
+                        <button class="btn status-btn" data-status="absent">Mark Absent</button>
+                        <button class="btn status-btn" data-status="late">Mark Late</button>
+                        <button class="btn status-btn" data-status="on_leave">Mark On Leave</button>
+                    </div>
+                    <div class="employee-list">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th><input type="checkbox" id="checkbox-all"></th>
+                                    <th class="sortable">ID</th>
+                                    <th class="sortable">Name</th>
+                                    <th class="sortable">Position</th>
+                                    <th class="sortable">Performance</th>
+                                    <th class="sortable">Hours</th>
+                                    <th class="sortable">Status</th>
+                                    <th class="sortable">Check In</th>
+                                    <th class="sortable">KPI</th>
+                                    <th class="sortable">Alerts</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for employee in employees %}
+                                <tr data-id="{{ employee.id }}">
+                                    <td><input type="checkbox" class="employee-checkbox" data-id="{{ employee.id }}"></td>
+                                    <td>{{ employee.id }}</td>
+                                    <td>{{ employee.name }}</td>
+                                    <td>{{ employee.position }}</td>
+                                    <td class="performance {{ employee.performance.lower() }}">{{ employee.performance }}</td>
+                                    <td>{{ employee.hours }}</td>
+                                    <td class="status {{ employee.status }}">{{ employee.status }}</td>
+                                    <td>{{ employee.check_in }}</td>
+                                    <td>{{ employee.kpi }}</td>
+                                    <td>{{ employee.alerts }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="employee-list-footer">
+                        <span id="visible-count">Showing {{ employees|length }} of {{ employees|length }} employees</span>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Employee Summary</h2>
+                    </div>
+                    <div class="card-content">
+                        <div class="employee-summary">
+                            <div class="summary-metrics">
+                                <div class="metric">
+                                    <span class="metric-title">Total</span>
+                                    <span class="metric-value">{{ employee_summary.total }}</span>
+                                </div>
+                                <div class="metric">
+                                    <span class="metric-title">Present</span>
+                                    <span class="metric-value present">{{ employee_summary.present }}</span>
+                                </div>
+                                <div class="metric">
+                                    <span class="metric-title">Absent</span>
+                                    <span class="metric-value absent">{{ employee_summary.absent }}</span>
+                                </div>
+                                <div class="metric">
+                                    <span class="metric-title">Late</span>
+                                    <span class="metric-value late">{{ employee_summary.late }}</span>
+                                </div>
+                                <div class="metric">
+                                    <span class="metric-title">On Leave</span>
+                                    <span class="metric-value on-leave">{{ employee_summary.on_leave }}</span>
+                                </div>
+                                <div class="metric">
+                                    <span class="metric-title">Avg KPI</span>
+                                    <span class="metric-value">{{ employee_summary.avg_kpi }}%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Include the employee JS file -->
+    <script src="{{ url_for('static', filename='js/employee.js') }}"></script>
+</body>
+</html>

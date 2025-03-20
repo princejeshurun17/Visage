@@ -1,5 +1,6 @@
-from flask import Flask, render_template, Response, jsonify
+from flask import Flask, render_template, Response, jsonify, request, redirect, url_for, session, flash
 import cv2
+import gc
 import datetime
 import os
 import random
@@ -11,6 +12,19 @@ import threading
 import time
 
 app = Flask(__name__)
+app.secret_key = 'your_secret_key_here'  # Required for sessions
+
+# Simple user database (in a real app, you'd use a proper database)
+users = {
+    "admin": {
+        "password": "admin123",
+        "name": "Admin User"
+    },
+    "manager": {
+        "password": "manager123",
+        "name": "Arthur Morgan"
+    }
+}
 
 # Global variables
 frame_lock = threading.Lock()
@@ -39,7 +53,15 @@ employees = [
     {"id": 5, "name": "Amanda Lee", "position": "Team Lead", "performance": "High", "hours": "7/8",
      "status": "present", "check_in": "07:50", "kpi": 98, "alerts": 0},
     {"id": 6, "name": "Daniel Miller", "position": "Stocker", "performance": "Medium", "hours": "5/8",
-     "status": "on_leave", "check_in": "—", "kpi": 68, "alerts": 0}
+     "status": "on_leave", "check_in": "—", "kpi": 68, "alerts": 0},
+    {"id": 7, "name": "Olivia Brown", "position": "Cashier", "performance": "High", "hours": "4/8",
+    "status": "present", "check_in": "08:10", "kpi": 91, "alerts": 1},
+    {"id": 8, "name": "James Wilson", "position": "Customer Service", "performance": "Low", "hours": "3/8",
+    "status": "absent", "check_in": "—", "kpi": 42, "alerts": 3},
+    {"id": 9, "name": "Sophia Martinez", "position": "Cashier", "performance": "High", "hours": "6/8",
+    "status": "present", "check_in": "07:55", "kpi": 95, "alerts": 0},
+    {"id": 10, "name": "William Taylor", "position": "Stocker", "performance": "Medium", "hours": "5/8",
+    "status": "late", "check_in": "09:00", "kpi": 70, "alerts": 1}
 ]
 
 # Add a function to calculate employee summary metrics
@@ -76,175 +98,166 @@ def get_metrics():
 # Function to refresh emotion data
 def refresh_emotion_data():
     global emotion_stats
-    emotions = ["Happy", "Neutral", "Surprised", "Sad", "Angry", "Disgusted", "Fearful"]
-    total = 100
     
-    # Generate random percentages that sum to 100%
-    percentages = []
-    remaining = total
-    for _ in range(len(emotions) - 1):
-        if remaining <= 0:
-            percentages.append(0)
-        else:
-            p = random.randint(0, remaining)
-            percentages.append(p)
-            remaining -= p
-    percentages.append(remaining)
+    # If no existing stats, generate random ones
+    if not emotion_stats:
+        emotions = ["Happy", "Neutral", "Surprised", "Sad", "Angry", "Disgusted", "Fearful"]
+        percentages = [random.randint(5, 30) for _ in range(len(emotions))]
+        total = sum(percentages)
+        percentages = [int((p / total) * 100) for p in percentages]
+        # Adjust the last one to ensure sum is 100
+        percentages[-1] += (100 - sum(percentages))
+        stats = [{"emotion": e, "percentage": p} for e, p in zip(emotions, percentages)]
+        emotion_stats = sorted(stats, key=lambda x: x["percentage"], reverse=True)[:5]
+        return emotion_stats
     
-    # Shuffle to randomize
-    random.shuffle(percentages)
+    # For subsequent refreshes, modify existing values slightly
+    new_stats = []
+    remaining = 100
     
-    # Create emotion stats and sort by percentage
-    stats = [{"emotion": e, "percentage": p} for e, p in zip(emotions, percentages)]
-    stats.sort(key=lambda x: x["percentage"], reverse=True)
+    # Process all but the last emotion, with slight variations
+    for i in range(len(emotion_stats) - 1):
+        current = emotion_stats[i]
+        # Vary by -5% to +5% of current value, but stay at least 2%
+        variation = random.randint(-5, 5)
+        new_percentage = max(2, current["percentage"] + variation)
+        
+        # Ensure we don't exceed remaining percentage
+        if new_percentage > remaining - 2 * (len(emotion_stats) - i - 1):
+            new_percentage = max(2, remaining - 2 * (len(emotion_stats) - i - 1))
+            
+        remaining -= new_percentage
+        new_stats.append({"emotion": current["emotion"], "percentage": new_percentage})
     
-    # Take top 5
-    emotion_stats = stats[:5]
+    # Set the last emotion to take the remaining percentage
+    new_stats.append({
+        "emotion": emotion_stats[-1]["emotion"], 
+        "percentage": remaining
+    })
+    
+    # Sort by percentage
+    new_stats.sort(key=lambda x: x["percentage"], reverse=True)
+    emotion_stats = new_stats
+    
     return emotion_stats
 
-# Camera handling
 def generate_frames():
+    frame_count = 0
     global current_frame, detected_emotion
-    
-    # Create a direct camera connection for the video feed
-    camera = cv2.VideoCapture(0, cv2.CAP_DSHOW)
-    
-    if not camera.isOpened():
-        print("Error: Could not open camera directly in generate_frames")
-        return
-        
-    # Set lower resolution for better streaming performance
-    camera.set(cv2.CAP_PROP_FRAME_WIDTH, 700)
-    camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 300)
-    
-
-    # Add a frame counter
-    frame_counter = 0
+    camera = None
     
     try:
-        while True:
-            success, frame = camera.read()
-            
-            if not success:
-                print("Failed to capture frame in generate_frames")
-                time.sleep(0.1)
-                try:
-                    cv2.VideoCapture.release(camera)
-                    cv2.VideoCapture(0, cv2.CAP_DSHOW)
-                except Exception as e:
-                    print(f"Error in generate_frames: {e}")
-                continue
-
-            # Convert frame to grayscale for face detection
-            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-                
-            # Detect faces in the frame
-            faces = face_cascade.detectMultiScale(gray, 1.1, 4)
-
-            # Draw rectangles around detected faces
-            for (x, y, w, h) in faces:
-                cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-
-            # Perform emotion analysis (only on every 5th frame to improve performance)
-            frame_counter += 1
-            if frame_counter % 5 == 0:  # Process every 5th frame
-
-                # Perform emotion analysis
-                try:
-                    result = DeepFace.analyze(frame, actions=['emotion'], enforce_detection=False)
-                    print(result)
-                    # Extract dominant emotion if analysis is successful
-                    if isinstance(result, dict) and 'dominant_emotion' in result:
-                        dominant_emotion = result['dominant_emotion']
-                        detected_emotion = dominant_emotion.capitalize()
-                                    
-                except Exception as e:
-                    print(f"Error during face analysis: {str(e)}")
-                    result = None
-
-                
-            # Process the frame more simply - avoid excessive processing
-            #frame = cv2.resize(frame, (320, 240))
-            
-            # Convert frame to JPEG
-            _, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 70])
-            frame_bytes = buffer.tobytes()
-            
-            # Yield frame in multipart response
-            yield (b'--frame\r\n'
-                   b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
-                   
-            # Add a small delay to control frame rate
-            time.sleep(0.03)
-    except Exception as e:
-        print(f"Error in generate_frames: {e}")
-    finally:
-        camera.release()
-
-
-# Start camera thread
-'''
-def camera_thread():
-    # Try DirectShow backend instead of Microsoft Media Foundation
-    camera = cv2.VideoCapture(0, cv2.CAP_DSHOW)  
-    
-    # Check if camera opened successfully
-    if not camera.isOpened():
-        print("Error: Could not open camera. Check if it's being used by another application.")
-        return
+        camera = cv2.VideoCapture(0, cv2.CAP_DSHOW)
         
-    # Set camera properties for better compatibility
-    camera.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-    camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-    
-    global current_frame, detected_emotion
-    
-    try:
+        if not camera.isOpened():
+            print("Error: Could not open camera directly in generate_frames")
+            return
+            
+        # Set lower resolution for better streaming performance
+        camera.set(cv2.CAP_PROP_FRAME_WIDTH, 700)
+        camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 300)
+        
         while True:
-            success, frame = camera.read()
-            if success:
-                # Resize frame
-                frame = cv2.resize(frame, (400, 300))
-                
-                # Convert to grayscale for face detection
+            try:
+                success, frame = camera.read()
+                if not success:
+                    print("Failed to capture frame")
+                    break
+                    
+                # Process frame and detect faces
                 gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-                
-                # Detect faces
                 faces = face_cascade.detectMultiScale(gray, 1.1, 4)
                 
-                # Draw rectangle around faces
+                # Draw rectangles around detected faces
                 for (x, y, w, h) in faces:
-                    cv2.rectangle(frame, (x, y), (x+w, y+h), (255, 0, 0), 2)
+                    cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
                 
-                # Analyze emotion using DeepFace
-                try:
-                    if random.randint(0, 20) == 0:  # Only analyze occasionally to reduce CPU usage
+                # Emotion analysis (less frequent)
+                if random.randint(0, 20) == 0:
+                    try:
                         result = DeepFace.analyze(frame, actions=['emotion'], enforce_detection=False)
                         if isinstance(result, dict) and 'dominant_emotion' in result:
                             detected_emotion = result['dominant_emotion'].capitalize()
-                        else:
-                            detected_emotion = "No emotion detected"
-                except Exception as e:
-                    print(f"Error during face analysis: {str(e)}")
+                    except Exception as e:
+                        print(f"Emotion analysis error: {e}")
                 
-                # Store current frame for other functions
-                with frame_lock:
-                    current_frame = frame.copy()
-            else:
-                # If frame read failed, wait a bit and try again
-                print("Failed to capture frame, retrying...")
-                time.sleep(0.5)
+                # Convert to JPEG
+                _, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 70])
+                frame_bytes = buffer.tobytes()
                 
-            time.sleep(0.03)  # ~30 FPS
+                yield (b'--frame\r\n'
+                       b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
+                
+                time.sleep(0.03)  # Frame rate control
+                
+                frame_count += 1
+                if frame_count % 100 == 0:  # Every 100 frames
+                    gc.collect()
+                
+            except Exception as e:
+                print(f"Frame processing error: {e}")
+                break
+                
+    except Exception as e:
+        print(f"Camera error: {e}")
     finally:
-        # Always release camera when done
-        camera.release()
-'''
+        if camera is not None:
+            camera.release()
+             
+def reset_camera():
+    global current_frame, detected_emotion
+    current_frame = None
+    detected_emotion = "Detecting..."
+    time.sleep(1)  # Wait before retrying
+            
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    error = None
+    
+    # If user is already logged in, redirect to dashboard
+    if 'user_id' in session:
+        return redirect(url_for('index'))
+    
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        
+        if username in users and users[username]['password'] == password:
+            # Set user in session
+            session['user_id'] = username
+            session['user_name'] = users[username]['name']
+            # Redirect to dashboard
+            return redirect(url_for('index'))
+        else:
+            error = "Invalid username or password. Please try again."
+    
+    return render_template('login.html', error=error)
 
-# Routes
+# Make root URL redirect to login
 @app.route('/')
+def root():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    return redirect(url_for('index'))
+
+# Add logout route
+@app.route('/logout')
+def logout():
+    session.pop('user_id', None)
+    session.pop('user_name', None)
+    return redirect(url_for('login'))
+
+# Modify the index route to check for login
+@app.route('/dashboard')
 def index():
-    current_time = datetime.datetime.now().strftime("%H:%M:%S")
+    # Check if user is logged in
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    # Get the user's name from session
+    manager_name = session.get('user_name', 'Manager')
+    
+    current_time = datetime.datetime.now().strftime("%I:%M:%S %p")
     current_date = datetime.datetime.now().strftime("%A, %B %d, %Y")
     
     return render_template('index.html', 
@@ -259,6 +272,10 @@ def index():
     
 @app.route('/analytics')
 def analytics():
+
+    # Check if user is logged in
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
 
     # Performance trend data (simulated)
     performance_trend = {
@@ -309,41 +326,95 @@ def analytics():
                           department_performance=json.dumps(department_performance),
                           employee_summary=get_employee_summary())
 
+@app.route('/employees', methods=['GET', 'POST'])
+def employees_page():
+    
+    # Check if user is logged in
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    # 12-hour format with AM/PM
+    current_time = datetime.datetime.now().strftime("%I:%M:%S %p")
+    current_date = datetime.datetime.now().strftime("%A, %B %d, %Y")
+    
+    if request.method == 'POST':
+        # Logic to update employee statuses
+        employee_ids = request.form.getlist('employee_ids')
+        new_status = request.form.get('status')
+        
+        if employee_ids and new_status:
+            for emp_id in employee_ids:
+                emp_id = int(emp_id)
+                for emp in employees:
+                    if emp['id'] == emp_id:
+                        emp['status'] = new_status
+                        # If marking as present, set a check-in time
+                        if new_status == 'present':
+                            emp['check_in'] = datetime.datetime.now().strftime("%H:%M")
+                        # If marking as absent or on leave, clear check-in time
+                        elif new_status in ['absent', 'on_leave']:
+                            emp['check_in'] = "—"
+            
+            # Return success message
+            return jsonify({'success': True, 'message': f'Updated {len(employee_ids)} employees to {new_status}'})
+        
+        return jsonify({'success': False, 'message': 'Missing required data'})
+    
+    # GET request - render the employees page
+    return render_template('employees.html', 
+                          manager_name=manager_name, 
+                          employees=employees,
+                          employee_summary=get_employee_summary(),
+                          current_time=current_time,
+                          current_date=current_date)
+
+
 @app.route('/camera_test')
 def camera_test():
-    # This returns plain text for debugging
     global current_frame
     if current_frame is None:
         return "No frames captured yet"
     frame_shape = current_frame.shape if current_frame is not None else "None"
     return f"Camera status: Frame shape={frame_shape}"
 
+
 @app.route('/video_feed')
 def video_feed():
     return Response(generate_frames(), 
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
+
 @app.route('/get_emotion')
 def get_emotion():
     return jsonify({"emotion": detected_emotion})
 
+
 @app.route('/get_current_time')
 def get_current_time():
-    current_time = datetime.datetime.now().strftime("%H:%M:%S")
+    current_time = datetime.datetime.now().strftime("%I:%M:%S %p")
     current_date = datetime.datetime.now().strftime("%A, %B %d, %Y")
     return jsonify({"time": current_time, "date": current_date})
+
 
 @app.route('/refresh_emotions')
 def refresh_emotions():
     new_stats = refresh_emotion_data()
     return jsonify({"emotion_stats": new_stats})
 
-    
-"""update_live_emotion_thread = threading.Thread(target=refresh_live_emotion_data, daemon=True)
-update_live_emotion_thread.start()  """  
-# Start the camera thread
-#camera_thread = threading.Thread(target=camera_thread, daemon=True)
-#camera_thread.start()
+@app.route('/health')
+def health_check():
+    global current_frame
+    status = {
+        "camera_active": current_frame is not None,
+        "last_emotion": detected_emotion,
+        "memory_usage": f"{gc.get_count()}"
+    }
+    return jsonify(status)
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    try:
+        app.run(debug=True)
+    except Exception as e:
+        print(f"Application error: {e}")
+        # Cleanup
+        cv2.destroyAllWindows()

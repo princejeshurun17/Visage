@@ -19,13 +19,14 @@
                     <ul>
                         <li class="active"><a href="/"><i class="icon">📊</i> Dashboard</a></li>
                         <li><a href="/analytics"><i class="icon">📈</i> Analytics</a></li>
-                        <li><a href="#"><i class="icon">👥</i> Employees</a></li>
+                        <li><a href="/employees"><i class="icon">👥</i> Employees</a></li>
                         <li><a href="#"><i class="icon">⚙️</i> Settings</a></li>
                     </ul>
                 </nav>
             </div>
             <div class="sidebar-footer">
                 <p>© 2025 Visage</p>
+                <p><a href="{{ url_for('logout') }}" style="color: var(--dark-text-secondary); text-decoration: none;">Logout</a></p>
             </div>
             <div class="theme-toggle">
                 <button id="theme-toggle-btn">☀️</button>
