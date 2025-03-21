@@ -1,7 +1,8 @@
 /* Analytics page specific styles */
 .analytics-grid {
     display: grid;
-    grid-template-columns: repeat(12, 1fr);
+    grid-template-columns: repeat(18, 1fr);
+    grid-template-rows: repeat(9, 0.33fr);
     gap: 20px;
     padding-top: 10px;
     padding-left: 10px;
@@ -16,15 +17,27 @@
 }
 
 .full-width {
-    grid-column: span 12;
+    grid-column: span 18;
+    grid-row: span 3;
+}
+
+.half-width-three-height {
+    grid-column: span 9;
+    grid-row: span 4;
+}
+
+.half-width-half-height {
+    grid-column: span 9;
+    grid-row: span 2;
 }
 
 .half-width {
-    grid-column: span 6;
+    grid-column: span 9;
+    grid-row: span 3;
 }
 
 .third-width {
-    grid-column: span 4;
+    grid-column: span 6;
 }
 
 .analytics-grid .card {
@@ -42,22 +55,24 @@
 }
 
 .analytics-grid .card-content {
-    padding: 20px;
+    padding: 10px;
     height: 350px; /* Increase height for better visibility */
     position: relative;
+    display: flex;
+    flex-direction: column;
 }
 
 .analytics-grid canvas {
     width: 100% !important;
     height: 100% !important;
-    max-height: 300px; /* Add max-height to ensure proper scaling */
+    max-height: 550px; /* Add max-height to ensure proper scaling */
 }
 
 /* Analytics summary styles */
 .analytics-summary {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 15px;
+    grid-template-columns: repeat(6, 1fr);
+    grid-template-rows: repeat(1,0.5fr);
     height: 100%;
 }
 
@@ -85,6 +100,16 @@
 /* Chart styles for dark mode */
 #performanceChart, #emotionTrendChart, #attendanceChart, #departmentChart {
     background-color: transparent;
+}
+
+/* Ensure chart container takes proper space */
+#emotionsByHourChart, 
+#emotionTrendChart, 
+#performanceChart, 
+#individualPerformanceChart {
+    width: 100% !important;
+    flex: 1;
+    max-height: none !important;
 }
 
 /* Make sure charts are responsive */
@@ -149,7 +174,6 @@
     position: fixed;
 }
 
-
 /* date stuff */
 
 .date{
@@ -163,4 +187,74 @@
     font-size:24px;
     font-weight:bold;
     text-align: right;
+    margin-top: 5px;
+}
+
+.chart-controls {
+    display: flex;
+    margin-bottom: 5px;
+    justify-content: flex-end;
+    z-index: 10;
+}
+
+.filter-dropdown {
+    background-color: var(--dark-card);
+    color: var(--dark-text);
+    border: 2px solid var(--dark-border);
+    padding: 6px 12px;
+    border-radius: 5px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+/* Fix for time display */
+.time-display {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+/* Add or update these specific styles */
+
+/* Fix for the Emotions by Hour chart display */
+.analytics-grid .card-content {
+    padding: 20px;
+    height: 350px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Ensure chart container takes proper space */
+#emotionsByHourChart, 
+#emotionTrendChart, 
+#performanceChart, 
+#individualPerformanceChart {
+    width: 100% !important;
+    flex: 1;
+    max-height: none !important;
+}
+
+/* Fix for chart controls */
+.chart-controls {
+    margin-bottom: 15px;
+    z-index: 10;
+}
+
+/* Fix for time display */
+.time-display {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+.time {
+    font-size: 24px;
+    font-weight: bold;
+    margin-top: 5px;
+}
+
+.date {
+    font-size: 14px;
+    color: var(--dark-text-secondary);
 }

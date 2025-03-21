@@ -229,7 +229,7 @@ body.light-mode #current-date {
     display: flex;
     flex-direction: column;
     height: 100%;  /* Take full height */
-    min-height: 800px;  /* Ensure minimum height */
+    min-height: 700px;  /* Ensure minimum height */
 }
 
 /* Card Content */
@@ -424,14 +424,32 @@ body.dark-mode .metric-title {
     color: var(--dark-text-secondary);
 }
 
+body.dark-mode .metric-title-performance {
+    color: var(--dark-text-secondary);
+    font-size: 16px;
+}
+
 body.light-mode .metric-title {
     color: var(--light-text-secondary);
+}
+
+body.light-mode .metric-title-performance {
+    color: var(--light-text-secondary);
+    font-size: 16px;
 }
 
 .metric-value {
     font-size: 24px;
     font-weight: bold;
     align-self: center;
+}
+
+.metric-value-performance {
+    font-size: 30px;
+    font-weight: bold;
+    align-self: center;
+    justify-content: center;
+
 }
 
 /* Emotion Analytics */
@@ -654,6 +672,7 @@ body.light-mode .btn:hover {
     display: flex;
     flex-wrap: wrap;
     gap: 15px;
+    justify-content: space-between;
 }
 
 .metric {
@@ -760,6 +779,13 @@ tr.status-on_leave {
     bottom: 30px;
 }
 
+
+body.light-mode .sidebar-footer {
+    color: var(--light-text);
+    display: flex;
+
+}
+
 .content {
     margin-left: 250px;
     padding: 15px;
@@ -794,6 +820,10 @@ tr.status-on_leave {
     display: flex;
     align-items: center;
     font-weight: 500;
+}
+
+body.light-mode .sidebar nav a {
+    color: var(--dark-table-text);
 }
 
 .sidebar .icon {
@@ -1090,9 +1120,13 @@ tr.status-on_leave {
     padding: 10px 15px;
     border-radius: 8px;
     border: 1px solid var(--dark-border);
-    background-color: var(--dark-input-bg);
+    background-color: var(--dark-accent);
     color: var(--dark-text);
     cursor: pointer;
+}
+
+.filter-dropdown .option{
+    color:var(--dark-bg);
 }
 
 /* Manager profile in sidebar */

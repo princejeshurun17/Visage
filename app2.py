@@ -44,7 +44,7 @@ manager_name = "Arthur Morgan"
 employees = [
     {"id": 1, "name": "Sarah Johnson", "position": "Cashier", "performance": "High", "hours": "4/8", 
      "status": "present", "check_in": "08:05", "kpi": 97, "alerts": 0},
-    {"id": 2, "name": "Michael Smith", "position": "Stocker", "performance": "Medium", "hours": "3/8",
+    {"id": 2, "name": "Michael Smith", "position": "Waiter", "performance": "Medium", "hours": "3/8",
      "status": "late", "check_in": "09:15", "kpi": 72, "alerts": 1},
     {"id": 3, "name": "Emily Davis", "position": "Customer Service", "performance": "High", "hours": "6/8",
      "status": "present", "check_in": "08:00", "kpi": 94, "alerts": 0},
@@ -52,7 +52,7 @@ employees = [
      "status": "absent", "check_in": "—", "kpi": 45, "alerts": 2},
     {"id": 5, "name": "Amanda Lee", "position": "Team Lead", "performance": "High", "hours": "7/8",
      "status": "present", "check_in": "07:50", "kpi": 98, "alerts": 0},
-    {"id": 6, "name": "Daniel Miller", "position": "Stocker", "performance": "Medium", "hours": "5/8",
+    {"id": 6, "name": "Daniel Miller", "position": "Waiter", "performance": "Medium", "hours": "5/8",
      "status": "on_leave", "check_in": "—", "kpi": 68, "alerts": 0},
     {"id": 7, "name": "Olivia Brown", "position": "Cashier", "performance": "High", "hours": "4/8",
     "status": "present", "check_in": "08:10", "kpi": 91, "alerts": 1},
@@ -60,7 +60,7 @@ employees = [
     "status": "absent", "check_in": "—", "kpi": 42, "alerts": 3},
     {"id": 9, "name": "Sophia Martinez", "position": "Cashier", "performance": "High", "hours": "6/8",
     "status": "present", "check_in": "07:55", "kpi": 95, "alerts": 0},
-    {"id": 10, "name": "William Taylor", "position": "Stocker", "performance": "Medium", "hours": "5/8",
+    {"id": 10, "name": "William Taylor", "position": "Waiter", "performance": "Medium", "hours": "5/8",
     "status": "late", "check_in": "09:00", "kpi": 70, "alerts": 1}
 ]
 
@@ -257,12 +257,15 @@ def index():
     # Get the user's name from session
     manager_name = session.get('user_name', 'Manager')
     
+    # Filter employees to show only those marked as present
+    present_employees = [emp for emp in employees if emp["status"] == "present"]
+    
     current_time = datetime.datetime.now().strftime("%I:%M:%S %p")
     current_date = datetime.datetime.now().strftime("%A, %B %d, %Y")
     
     return render_template('index.html', 
                           manager_name=manager_name,
-                          employees=employees,
+                          employees=present_employees,
                           employee_summary=get_employee_summary(),
                           metrics=get_metrics(),
                           emotion_stats=emotion_stats,
@@ -272,7 +275,6 @@ def index():
     
 @app.route('/analytics')
 def analytics():
-
     # Check if user is logged in
     if 'user_id' not in session:
         return redirect(url_for('login'))
@@ -281,14 +283,20 @@ def analytics():
     performance_trend = {
         "labels": ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
         "datasets": [
-            {
-                "label": "Employee Productivity",
-                "data": [65, 72, 78, 75, 82, 87]
-            },
-            {
-                "label": "Team Target",
-                "data": [70, 70, 75, 75, 80, 80]
-            }
+            {"label": "Employee Productivity", "data": [65, 72, 78, 75, 82, 87]},
+            {"label": "Team Target", "data": [70, 70, 75, 75, 80, 80]}
+        ]
+    }
+    
+    # NEW: Individual Employee KPI Performance over time
+    individual_performance = {
+        "labels": ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+        "employees": [
+            {"name": "Sarah Johnson", "data": [95, 97, 94, 96, 98, 97], "color": "#4CAF50"},
+            {"name": "Michael Smith", "data": [70, 68, 72, 75, 73, 72], "color": "#FF9800"},
+            {"name": "Emily Davis", "data": [93, 90, 94, 92, 95, 94], "color": "#2196F3"},
+            {"name": "Robert Wilson", "data": [45, 48, 42, 44, 45, 45], "color": "#F44336"},
+            {"name": "Amanda Lee", "data": [95, 97, 96, 98, 97, 98], "color": "#9C27B0"}
         ]
     }
     
@@ -304,26 +312,50 @@ def analytics():
         ]
     }
     
-    # Attendance metrics
-    attendance_data = {
-        "present": [92, 88, 95, 91, 93, 89],
-        "absent": [5, 7, 3, 6, 4, 8],
-        "late": [3, 5, 2, 3, 3, 3],
-        "labels": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
-    }
-    
-    # Department performance comparison
-    department_performance = {
-        "departments": ["Cashiers", "Customer Service", "Stockers", "Management"],
-        "values": [76, 82, 71, 88]
+    # NEW: Emotions by time of day across weeks
+    emotions_by_hour = {
+        "timeSlots": ["8-10 AM", "10-12 PM", "12-2 PM", "2-4 PM", "4-6 PM", "6-8 PM"],
+        "weeks": ["Week 1", "Week 2", "Week 3", "Week 4"],
+        "data": {
+            "Happy": [
+                [60, 55, 40, 45, 50, 55],  # Week 1
+                [65, 58, 42, 48, 52, 58],  # Week 2
+                [55, 50, 38, 42, 48, 52],  # Week 3
+                [58, 52, 40, 45, 50, 55]   # Week 4
+            ],
+            "Neutral": [
+                [30, 35, 45, 40, 35, 30],  # Week 1
+                [25, 32, 43, 38, 33, 28],  # Week 2
+                [35, 38, 48, 43, 38, 33],  # Week 3
+                [32, 36, 45, 40, 35, 30]   # Week 4
+            ],
+            "Sad": [
+                [5, 5, 8, 7, 8, 7],  # Week 1
+                [4, 4, 7, 6, 7, 6],  # Week 2
+                [6, 6, 9, 8, 9, 8],  # Week 3
+                [5, 5, 8, 7, 8, 7]   # Week 4
+            ],
+            "Angry": [
+                [3, 3, 5, 6, 5, 6],  # Week 1
+                [4, 4, 6, 7, 6, 6],  # Week 2
+                [2, 3, 4, 5, 4, 5],  # Week 3
+                [3, 4, 5, 6, 5, 6]   # Week 4
+            ],
+            "Surprised": [
+                [2, 2, 2, 2, 2, 2],  # Week 1
+                [2, 2, 2, 1, 2, 2],  # Week 2
+                [2, 3, 1, 2, 1, 2],  # Week 3
+                [2, 3, 2, 2, 2, 2]   # Week 4
+            ]
+        }
     }
     
     return render_template('analytics.html',
                           manager_name=manager_name,
                           performance_trend=json.dumps(performance_trend),
                           emotion_trend=json.dumps(emotion_trend),
-                          attendance_data=json.dumps(attendance_data),
-                          department_performance=json.dumps(department_performance),
+                          individual_performance=json.dumps(individual_performance),
+                          emotions_by_hour=json.dumps(emotions_by_hour),
                           employee_summary=get_employee_summary())
 
 @app.route('/employees', methods=['GET', 'POST'])
